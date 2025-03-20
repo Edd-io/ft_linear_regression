@@ -9,10 +9,6 @@ import math
 PROGRAM_NAME = sys.argv[0]
 
 def parse_data() -> List[Dict[str, float]]:
-	"""
-	Function to read and parse a CSV file. Returns a list of dictionaries.
-	"""
-
 	data = []
 
 	try:
@@ -36,10 +32,6 @@ def parse_data() -> List[Dict[str, float]]:
 	return data
 
 def average_calc(values: List[Dict[str, float]]) -> List[float]:
-	"""
-	Function to calculate the average.
-	"""
-
 	x = 0
 	y = 0
 
@@ -50,42 +42,14 @@ def average_calc(values: List[Dict[str, float]]) -> List[float]:
 	y /= len(values)
 	return [x, y]
 
-def calculate_beta1(averages: List[float], values: List[Dict[str, float]]) -> float:
-	"""
-	Calculate the slope (beta1) of a simple linear regression model.
-	"""
-
-	top = 0
-	bot = 0
-
-	for value in values:
-		if top == 0:
-			top = (value['km'] - averages[0]) * (value['price'] - averages[1])
-			bot = math.pow(value['km'] - averages[0], 2)
-			continue
-		top += (value['km'] - averages[0]) * (value['price'] - averages[1])
-		bot += math.pow(value['km'] - averages[0], 2)
-	return (top / bot)
-
-def calcultate_beta0(averages: List[float], beta1: float):
-	"""
-	Calculate the value of beta0 using the averages and beta1.
-	"""
-
-	return (averages[1] - (beta1 * averages[0]))
-
-def create_graph(values: List[Dict[str, float]], beta0: float, beta1: float):
-	"""
-	Show a graph with data
-	"""
-
+def create_graph(values: List[Dict[str, float]], theta0: float, theta1: float):
 	for value in values:
 		plt.scatter(value['km'], value['price'], color='blue')
 	x_min = min(value['km'] for value in values)
 	x_max = max(value['km'] for value in values)
 	x_line = np.linspace(x_min, x_max, 2)
-	y_line = beta0 + beta1 * x_line
-	plt.plot(x_line, y_line, '-r', label=f'y = {beta0:.2f} + {beta1:.2f}x')
+	y_line = theta0 + theta1 * x_line
+	plt.plot(x_line, y_line, '-r', label=f'y = {theta0:.2f} + {theta1:.2f}x')
 
 	plt.xlabel('x - km')
 	plt.ylabel('y - price')
@@ -94,26 +58,54 @@ def create_graph(values: List[Dict[str, float]], beta0: float, beta1: float):
 	plt.grid()
 	plt.show()
 
-def save_in_file(beta0: float, beta1: float):
-	"""
-	Create a file with data in it
-	"""
-
+def save_in_file(theta0: float, theta1: float):
 	data = {
-		"beta0": beta0,
-		"beta1": beta1
+		"theta0": theta0,
+		"theta1": theta1
 	}
 	with open("model.json", "w") as file:
 		json.dump(data, file, indent=4)
 
-def evaluate_model(data: List[Dict[str, float]], beta0: float, beta1: float):
-	"""
-	Calculate and show the precision of model
-	"""
+def estimate_price(θ0: float, θ1: float, mileage: float):
+	return θ0 + (θ1 * mileage)
 
-	x_values = [value['km'] for value in data]
-	y_real = [value['price'] for value in data]
-	y_pred = [beta0 + beta1 * x for x in x_values]
+def normalize_data(values):
+	km = [v['km'] for v in values]
+	price = [v['price'] for v in values]
+	km_mean = np.mean(km)
+	km_std = np.std(km)
+	price_mean = np.mean(price)
+	price_std = np.std(price)
+	return [
+		{
+			'km': (v['km'] - km_mean) / km_std,
+			'price': (v['price'] - price_mean) / price_std
+		}
+		for v in values
+	], (km_mean, km_std, price_mean, price_std)
+
+def training(values: List[Dict[str, float]]):
+	values, norms = normalize_data(values)
+	km_mean, km_std, price_mean, price_std = norms
+	
+	tmpθ0 = 0
+	tmpθ1 = 0
+	learning_rate = 0.1
+	for _ in range(1000):
+		grad0 = sum(estimate_price(tmpθ0, tmpθ1, v['km']) - v['price'] for v in values)
+		grad1 = sum((estimate_price(tmpθ0, tmpθ1, v['km']) - v['price']) * v['km'] for v in values)
+		tmpθ0 -= learning_rate * grad0 / len(values)
+		tmpθ1 -= learning_rate * grad1 / len(values)
+	θ0_real = (tmpθ0 * price_std) - (tmpθ1 * km_mean * price_std)/km_std + price_mean
+	θ1_real = tmpθ1 * price_std / km_std
+	return θ0_real, θ1_real
+		
+
+
+def evaluate_model(values: List[Dict[str, float]], theta0: float, theta1: float):
+	x_values = [value['km'] for value in values]
+	y_real = [value['price'] for value in values]
+	y_pred = [theta0 + theta1 * x for x in x_values]
 
 	y_mean = sum(y_real) / len(y_real)
 	ss_total = sum((yi - y_mean) ** 2 for yi in y_real)
@@ -127,13 +119,10 @@ def main():
 		print(f'Usage: python {sys.argv[0]}')
 		return
 	data = parse_data()
-	avgs = average_calc(data)
-	beta1 = calculate_beta1(avgs, data)
-	beta0 = calcultate_beta0(avgs, beta1)
-	evaluate_model(data, beta0, beta1)
-	save_in_file(beta0, beta1)
-	print(f"Beta0: {beta0}, Beta1: {beta1}")
-	create_graph(data, beta0, beta1)
+	theta0, theta1 = training(data)
+	save_in_file(theta0, theta1)
+	evaluate_model()
+	create_graph(data, theta0, theta1)
 
 if __name__ == '__main__':
 	main()
