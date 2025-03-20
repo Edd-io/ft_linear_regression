@@ -15,20 +15,24 @@ def parse_data() -> List[Dict[str, float]]:
 
 	data = []
 
-	with open('data.csv', newline='') as csvfile:
-		reader = csv.reader(csvfile, delimiter=',')
-		line = 1
+	try:
+		with open('data.csv', newline='') as csvfile:
+			reader = csv.reader(csvfile, delimiter=',')
+			line = 1
 
-		for row in reader:
-			if line == 1:
-				if row[0] != "km" and row[1] != "price":
-					print(PROGRAM_NAME + ': Invalid file')
-			else:
-				try:
-					data.append({"km": float(row[0]), "price": float(row[1])})
-				except:
-					print("Line " + str(line) + " invalid : skipped")
-			line += 1
+			for row in reader:
+				if line == 1:
+					if row[0] != "km" and row[1] != "price":
+						print(PROGRAM_NAME + ': Invalid file')
+				else:
+					try:
+						data.append({"km": float(row[0]), "price": float(row[1])})
+					except:
+						print("Line " + str(line) + " invalid : skipped")
+				line += 1
+	except:
+		print('File "data.csv" not found, incorrect or blocked')
+		sys.exit(1)
 	return data
 
 def average_calc(values: List[Dict[str, float]]) -> List[float]:
@@ -74,6 +78,7 @@ def create_graph(values: List[Dict[str, float]], beta0: float, beta1: float):
 	"""
 	Show a graph with data
 	"""
+
 	for value in values:
 		plt.scatter(value['km'], value['price'], color='blue')
 	x_min = min(value['km'] for value in values)
@@ -93,6 +98,7 @@ def save_in_file(beta0: float, beta1: float):
 	"""
 	Create a file with data in it
 	"""
+
 	data = {
 		"beta0": beta0,
 		"beta1": beta1
@@ -104,6 +110,7 @@ def evaluate_model(data: List[Dict[str, float]], beta0: float, beta1: float):
 	"""
 	Calculate and show the precision of model
 	"""
+
 	x_values = [value['km'] for value in data]
 	y_real = [value['price'] for value in data]
 	y_pred = [beta0 + beta1 * x for x in x_values]
@@ -116,12 +123,15 @@ def evaluate_model(data: List[Dict[str, float]], beta0: float, beta1: float):
 	print(f"R²: {r2:.4f} ({(r2 * 100):.0f}% of precision)")
 
 def main():
+	if len(sys.argv) > 1:
+		print(f'Usage: python {sys.argv[0]}')
+		return
 	data = parse_data()
 	avgs = average_calc(data)
 	beta1 = calculate_beta1(avgs, data)
 	beta0 = calcultate_beta0(avgs, beta1)
 	evaluate_model(data, beta0, beta1)
-	save_in_file(beta1, beta0)
+	save_in_file(beta0, beta1)
 	print(f"Beta0: {beta0}, Beta1: {beta1}")
 	create_graph(data, beta0, beta1)
 
