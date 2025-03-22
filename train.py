@@ -7,28 +7,29 @@ import sys
 import math
 
 PROGRAM_NAME = sys.argv[0]
+i = 0
 
-def parse_data() -> List[Dict[str, float]]:
+def parse_data(file) -> List[Dict[str, float]]:
 	data = []
-
+	global i
 	try:
-		with open('data.csv', newline='') as csvfile:
+		with open(file, newline='') as csvfile:
 			reader = csv.reader(csvfile, delimiter=',')
 			line = 1
 
 			for row in reader:
 				if line == 1:
 					if row[0] != "km" and row[1] != "price":
-						print(PROGRAM_NAME + ': Invalid file')
+						raise Exception("Invalid header")
 				else:
 					try:
-						data.append({"km": float(row[0]), "price": float(row[1])})
+						data.append({"km": float(row[0]) + i, "price": float(row[1])})
 					except:
 						print("Line " + str(line) + " invalid : skipped")
 				line += 1
 	except:
-		print('File "data.csv" not found, incorrect or blocked')
-		sys.exit(1)
+		print(f'File "{file}" not found, incorrect or blocked. Skipping...')
+		return []
 	return data
 
 def average_calc(values: List[Dict[str, float]]) -> List[float]:
@@ -38,6 +39,8 @@ def average_calc(values: List[Dict[str, float]]) -> List[float]:
 	for value in values:
 		x += value['km'] 
 		y += value['price']
+	if (len(values) == 0):
+		return [0, 0]
 	x /= len(values)
 	y /= len(values)
 	return [x, y]
@@ -115,13 +118,19 @@ def evaluate_model(values: List[Dict[str, float]], theta0: float, theta1: float)
 	print(f"R²: {r2:.4f} ({(r2 * 100):.0f}% of precision)")
 
 def main():
-	if len(sys.argv) > 1:
-		print(f'Usage: python {sys.argv[0]}')
+	data = []
+
+	if len(sys.argv) == 1:
+		print(f'Usage: python {sys.argv[0]} <file.csv>')
 		return
-	data = parse_data()
+	for arg in sys.argv[1:]:
+		if not arg.endswith('.csv'):
+			print(f'File "{arg}" not found, incorrect or blocked. Skipping...')
+			continue
+		data += parse_data(arg)
 	theta0, theta1 = training(data)
 	save_in_file(theta0, theta1)
-	evaluate_model()
+	evaluate_model(data, theta0, theta1)
 	create_graph(data, theta0, theta1)
 
 if __name__ == '__main__':
