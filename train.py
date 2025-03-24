@@ -4,7 +4,7 @@ import numpy as np
 import json
 import csv
 import sys
-import math
+import argparse
 
 PROGRAM_NAME = sys.argv[0]
 i = 0
@@ -120,8 +120,18 @@ def evaluate_model(values: List[Dict[str, float]], theta0: float, theta1: float)
 def main():
 	data = []
 
+	try:
+		parser = argparse.ArgumentParser(description="Train a linear regression model on CSV data.")
+		parser.add_argument(
+			"files", 
+			nargs="+", 
+			help="One or more CSV files containing 'km' and 'price' columns."
+		)
+	except:
+		sys.exit(1)
+	args = parser.parse_args()
 	if len(sys.argv) == 1:
-		print(f'Usage: python {sys.argv[0]} <file.csv>')
+		print(f'Usage: python {sys.argv[0]} <single/multiple file.csv>')
 		return
 	for arg in sys.argv[1:]:
 		if not arg.endswith('.csv'):

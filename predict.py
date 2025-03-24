@@ -2,12 +2,19 @@ import json
 import sys
 import matplotlib.pyplot as plt
 
+import argparse
+
+
+# Enter a value that is not null
+# over-fitting
+
+
 def get_data():
 	try:
 		with open('model.json') as jsonfile:
 			data = json.load(jsonfile)
 	except:
-		print('File "model.json" not found, incorrect or blocked')
+		print(f"Estimated selling price: 0€")
 		sys.exit(1)
 	return data
 
@@ -33,18 +40,20 @@ def plot_linear_model(theta0, theta1, mileage, price):
 	plt.ylim(0, max(price * 1.2, theta0 * 1.2))
 	plt.xlabel('Mileage (km)')
 	plt.ylabel('Price (€)')
-	plt.title('Price prediction with zero threshold')
 	plt.legend()
 	plt.grid(True)
 	plt.show()
 
 def main():
 	try:
-		mileage = float(sys.argv[1])
-		if mileage < 0:
-			raise ValueError
+		while True:
+			mileage = input('Enter a mileage : ')
+			if len(mileage) == 0:
+				print("Can't be null")
+				continue
+			break
 	except:
-		print(f'Usage: python {sys.argv[0]} <mileage (positive number)>')
+		print(f"Estimated selling price: 0€")
 		return
 	data = get_data()
 	try:
