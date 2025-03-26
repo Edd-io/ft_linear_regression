@@ -7,11 +7,11 @@ import sys
 import argparse
 
 PROGRAM_NAME = sys.argv[0]
-i = 0
+
+args = None
 
 def parse_data(file) -> List[Dict[str, float]]:
 	data = []
-	global i
 	try:
 		with open(file, newline='') as csvfile:
 			reader = csv.reader(csvfile, delimiter=',')
@@ -23,7 +23,7 @@ def parse_data(file) -> List[Dict[str, float]]:
 						raise Exception("Invalid header")
 				else:
 					try:
-						data.append({"km": float(row[0]) + i, "price": float(row[1])})
+						data.append({"km": float(row[0]), "price": float(row[1])})
 					except:
 						print("Line " + str(line) + " invalid : skipped")
 				line += 1
@@ -93,8 +93,8 @@ def training(values: List[Dict[str, float]]):
 	
 	tmpθ0 = 0
 	tmpθ1 = 0
-	learning_rate = 0.1
-	for _ in range(1000):
+	learning_rate = args.l
+	for _ in range(args.n):
 		grad0 = sum(estimate_price(tmpθ0, tmpθ1, v['km']) - v['price'] for v in values)
 		grad1 = sum((estimate_price(tmpθ0, tmpθ1, v['km']) - v['price']) * v['km'] for v in values)
 		tmpθ0 -= learning_rate * grad0 / len(values)
@@ -115,9 +115,10 @@ def evaluate_model(values: List[Dict[str, float]], theta0: float, theta1: float)
 	ss_residual = sum((yi - y_pred_i) ** 2 for yi, y_pred_i in zip(y_real, y_pred))
 	r2 = 1 - (ss_residual / ss_total)
 
-	print(f"R²: {r2:.4f} ({(r2 * 100):.0f}% of precision)")
+	print(f"R²: {r2:.4f} ({(r2 * 100):.0f}% of precision)", end='\n\n')
 
 def main():
+	global args
 	data = []
 
 	try:
@@ -127,21 +128,45 @@ def main():
 			nargs="+", 
 			help="One or more CSV files containing 'km' and 'price' columns."
 		)
+		parser.add_argument(
+			"-l",
+			type=float,
+			help="Set the learning rate.",
+			default=0.1
+		)
+		parser.add_argument(
+			"-n",
+			type=int,
+			help="Set the number of iterations.",
+			default=1000
+		)
+		parser.add_argument(
+			"-g",
+			action="store_true",
+			help="Display the graph.",
+			default=False
+		)
+		parser.add_argument(
+			"-e",
+			action="store_true",
+			help="Evaluate the model.",
+			default=False
+		)
+		args = parser.parse_args()
 	except:
 		sys.exit(1)
-	args = parser.parse_args()
-	if len(sys.argv) == 1:
-		print(f'Usage: python {sys.argv[0]} <single/multiple file.csv>')
-		return
-	for arg in sys.argv[1:]:
+	for arg in args.files:
 		if not arg.endswith('.csv'):
 			print(f'File "{arg}" not found, incorrect or blocked. Skipping...')
 			continue
 		data += parse_data(arg)
 	theta0, theta1 = training(data)
 	save_in_file(theta0, theta1)
-	evaluate_model(data, theta0, theta1)
-	create_graph(data, theta0, theta1)
+	print("Model saved in model.json")
+	if args.e:
+		evaluate_model(data, theta0, theta1)
+	if args.g:
+		create_graph(data, theta0, theta1)
 
 if __name__ == '__main__':
 	main()
