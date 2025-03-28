@@ -1,20 +1,18 @@
 import json
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
-
 import argparse
 
-
-# Enter a value that is not null
-# over-fitting
-
+matplotlib.use('Qt5Agg')
+test_mode = False
 
 def get_data():
 	try:
 		with open('model.json') as jsonfile:
 			data = json.load(jsonfile)
 	except:
-		print(f"Estimated selling price: 0€")
+		print(f"\rEstimated selling price: 0€")
 		sys.exit(1)
 	return data
 
@@ -45,15 +43,30 @@ def plot_linear_model(theta0, theta1, mileage, price):
 	plt.show()
 
 def main():
+
+	for arg in sys.argv[1:]:
+		if arg == '-h' or arg == '--help':
+			print(f"Usage: {sys.argv[0]}")
+			sys.exit(0)
+		elif arg == '-test':
+			test_mode = True
+			continue
+		else:
+			print(f"Unknown argument: {arg}")
+			sys.exit(1)
 	try:
 		while True:
 			mileage = input('Enter a mileage : ')
+			mileage = mileage.strip()
 			if len(mileage) == 0:
 				print("Can't be null")
+				if test_mode:
+					sys.exit(0)
 				continue
 			break
 	except:
-		print(f"Estimated selling price: 0€")
+		if not test_mode:
+			print(f"\rEstimated selling price: 0€")
 		return
 	data = get_data()
 	try:
@@ -63,11 +76,16 @@ def main():
 		print('Invalid model.json file')
 		return
 	try:
+		if (float(mileage) < 0):
+			raise Exception()
 		price = max(0, theta0 + theta1 * float(mileage))
-		print(f"Estimated selling price: {price:.2f}€")
-		plot_linear_model(theta0, theta1, float(mileage), price)
+		print(f"\rEstimated selling price: {price:.2f}€")
+		if not test_mode:
+			plot_linear_model(theta0, theta1, float(mileage), price)
+	except KeyboardInterrupt:
+		sys.exit(0)
 	except:
-		print(f"Estimated selling price: 0€")
+		print(f"\rEstimated selling price: 0€")
 
 if __name__ == '__main__':
 	main()

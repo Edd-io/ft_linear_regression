@@ -1,10 +1,13 @@
 import matplotlib.pyplot as plt
+import matplotlib
 from typing import List, Dict
 import numpy as np
 import json
 import csv
 import sys
 import argparse
+
+matplotlib.use('Qt5Agg') 
 
 PROGRAM_NAME = sys.argv[0]
 
@@ -155,11 +158,15 @@ def main():
 		args = parser.parse_args()
 	except:
 		sys.exit(1)
+	nb_valid_files = 0
 	for arg in args.files:
 		if not arg.endswith('.csv'):
 			print(f'File "{arg}" not found, incorrect or blocked. Skipping...')
 			continue
 		data += parse_data(arg)
+	if data == []:
+		print("No valid data found. Exiting...")
+		sys.exit(0)
 	theta0, theta1 = training(data)
 	save_in_file(theta0, theta1)
 	print("Model saved in model.json")
