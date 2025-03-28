@@ -62,9 +62,12 @@ def main():
 	except KeyError:
 		print('Invalid model.json file')
 		return
-	price = max(0, theta0 + theta1 * mileage)
-	print(f"Estimated selling price: {price:.2f}€")
-	plot_linear_model(theta0, theta1, mileage, price)
+	try:
+		price = max(0, theta0 + theta1 * float(mileage))
+		print(f"Estimated selling price: {price:.2f}€")
+		plot_linear_model(theta0, theta1, float(mileage), price)
+	except:
+		print(f"Estimated selling price: 0€")
 
 if __name__ == '__main__':
 	main()
