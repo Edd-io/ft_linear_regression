@@ -4,7 +4,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import argparse
 
-matplotlib.use('Qt5Agg')
 test_mode = False
 
 def get_data():
@@ -43,10 +42,10 @@ def plot_linear_model(theta0, theta1, mileage, price):
 	plt.show()
 
 def main():
-
+	global test_mode
 	for arg in sys.argv[1:]:
 		if arg == '-h' or arg == '--help':
-			print(f"Usage: {sys.argv[0]}")
+			print(f"Usage: {sys.argv[0]} [-test] [-h]")
 			sys.exit(0)
 		elif arg == '-test':
 			test_mode = True

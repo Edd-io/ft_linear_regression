@@ -7,8 +7,6 @@ import csv
 import sys
 import argparse
 
-matplotlib.use('Qt5Agg') 
-
 PROGRAM_NAME = sys.argv[0]
 
 args = None
@@ -69,8 +67,12 @@ def save_in_file(theta0: float, theta1: float):
 		"theta0": theta0,
 		"theta1": theta1
 	}
-	with open("model.json", "w") as file:
-		json.dump(data, file, indent=4)
+	try:
+		with open("model.json", "w") as file:
+			json.dump(data, file, indent=4)
+	except:
+		print("Error while saving the model in model.json")
+		sys.exit(1)
 
 def estimate_price(θ0: float, θ1: float, mileage: float):
 	return θ0 + (θ1 * mileage)
@@ -158,7 +160,12 @@ def main():
 		args = parser.parse_args()
 	except:
 		sys.exit(1)
-	nb_valid_files = 0
+	if args.l <= 0 or args.l > 1:
+		print("Learning rate must be between 0 and 1")
+		sys.exit(1)
+	if args.n <= 0:
+		print("Number of iterations must be greater than 0")
+		sys.exit(1)
 	for arg in args.files:
 		if not arg.endswith('.csv'):
 			print(f'File "{arg}" not found, incorrect or blocked. Skipping...')
